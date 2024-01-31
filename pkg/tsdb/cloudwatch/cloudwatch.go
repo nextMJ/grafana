@@ -59,12 +59,16 @@ const (
 	timeSeriesQuery = "timeSeriesQuery"
 )
 
-var logger = log.New().With("logger", "tsdb.cloudwatch")
-
 func ProvideService(cfg *setting.Cfg, httpClientProvider *httpclient.Provider) *CloudWatchService {
+	logger := backend.NewLoggerWith("logger", "tsdb.cloudwatch")
 	logger.Debug("Initializing")
 
-	executor := newExecutor(datasource.NewInstanceManager(NewInstanceSettings(httpClientProvider)), cfg, awsds.NewSessionCache())
+	executor := newExecutor(
+		datasource.NewInstanceManager(NewInstanceSettings(httpClientProvider)),
+		cfg,
+		awsds.NewSessionCache(),
+		logger,
+	)
 
 	return &CloudWatchService{
 		Cfg:      cfg,
@@ -81,11 +85,12 @@ type SessionCache interface {
 	GetSession(c awsds.SessionConfig) (*session.Session, error)
 }
 
-func newExecutor(im instancemgmt.InstanceManager, cfg *setting.Cfg, sessions SessionCache) *cloudWatchExecutor {
+func newExecutor(im instancemgmt.InstanceManager, cfg *setting.Cfg, sessions SessionCache, logger log.Logger) *cloudWatchExecutor {
 	e := &cloudWatchExecutor{
 		im:       im,
 		cfg:      cfg,
 		sessions: sessions,
+		logger:   logger,
 	}
 
 	e.resourceHandler = httpadapter.New(e.newResourceMux())
@@ -123,6 +128,7 @@ type cloudWatchExecutor struct {
 	cfg         *setting.Cfg
 	sessions    SessionCache
 	regionCache sync.Map
+	logger      log.Logger
 
 	resourceHandler backend.CallResourceHandler
 }
@@ -153,7 +159,7 @@ func (e *cloudWatchExecutor) getRequestContext(ctx context.Context, pluginCtx ba
 		LogsAPIProvider:       NewLogsAPI(sess),
 		EC2APIProvider:        ec2Client,
 		Settings:              instance.Settings,
-		Logger:                logger,
+		Logger:                e.logger,
 	}, nil
 }
 
@@ -162,7 +168,6 @@ func (e *cloudWatchExecutor) CallResource(ctx context.Context, req *backend.Call
 }
 
 func (e *cloudWatchExecutor) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	logger := logger.FromContext(ctx)
 	q := req.Queries[0]
 	var model DataQueryJson
 	err := json.Unmarshal(q.JSON, &model)
@@ -186,11 +191,11 @@ func (e *cloudWatchExecutor) QueryData(ctx context.Context, req *backend.QueryDa
 	case annotationQuery:
 		result, err = e.executeAnnotationQuery(ctx, req.PluginContext, model, q)
 	case logAction:
-		result, err = e.executeLogActions(ctx, logger, req)
+		result, err = e.executeLogActions(ctx, req)
 	case timeSeriesQuery:
 		fallthrough
 	default:
-		result, err = e.executeTimeSeriesQuery(ctx, logger, req)
+		result, err = e.executeTimeSeriesQuery(ctx, req)
 	}
 
 	return result, err

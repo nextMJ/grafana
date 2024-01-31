@@ -16,6 +16,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/features"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/mocks"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
@@ -119,7 +120,7 @@ func Test_CheckHealth(t *testing.T) {
 
 	t.Run("successfully query metrics and logs", func(t *testing.T) {
 		client = fakeCheckHealthClient{}
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 
 		resp, err := executor.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 			PluginContext: backend.PluginContext{DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{}},
@@ -138,7 +139,7 @@ func Test_CheckHealth(t *testing.T) {
 				return nil, fmt.Errorf("some logs query error")
 			}}
 
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 
 		resp, err := executor.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 			PluginContext: backend.PluginContext{DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{}},
@@ -157,7 +158,7 @@ func Test_CheckHealth(t *testing.T) {
 				return fmt.Errorf("some list metrics error")
 			}}
 
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 
 		resp, err := executor.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 			PluginContext: backend.PluginContext{DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{}},
@@ -175,7 +176,7 @@ func Test_CheckHealth(t *testing.T) {
 
 		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{getSession: func(c awsds.SessionConfig) (*session.Session, error) {
 			return nil, fmt.Errorf("some sessions error")
-		}})
+		}}, log.NewNullLogger())
 
 		resp, err := executor.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 			PluginContext: backend.PluginContext{DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{}},
@@ -234,7 +235,7 @@ func TestQuery_ResourceRequest_DescribeLogGroups_with_CrossAccountQuerying(t *te
 			},
 		}
 
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 		err := executor.CallResource(contextWithFeaturesEnabled(features.FlagCloudWatchCrossAccountQuerying), req, sender)
 		assert.NoError(t, err)
 

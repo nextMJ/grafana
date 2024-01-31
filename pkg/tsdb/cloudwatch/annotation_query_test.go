@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func TestQuery_AnnotationQuery(t *testing.T) {
 			return DataSource{Settings: models.CloudWatchSettings{}}, nil
 		})
 
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 		_, err := executor.QueryData(context.Background(), &backend.QueryDataRequest{
 			PluginContext: backend.PluginContext{
 				DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{},
@@ -68,7 +69,7 @@ func TestQuery_AnnotationQuery(t *testing.T) {
 			return DataSource{Settings: models.CloudWatchSettings{}}, nil
 		})
 
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 		_, err := executor.QueryData(context.Background(), &backend.QueryDataRequest{
 			PluginContext: backend.PluginContext{
 				DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{},

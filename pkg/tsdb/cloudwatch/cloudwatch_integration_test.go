@@ -16,6 +16,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/mocks"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
@@ -76,7 +77,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 			{MetricName: aws.String("Test_MetricName8"), Dimensions: []*cloudwatch.Dimension{{Name: aws.String("Test_DimensionName4"), Value: aws.String("Value1")}}},
 			{MetricName: aws.String("Test_MetricName9"), Dimensions: []*cloudwatch.Dimension{{Name: aws.String("Test_DimensionName1"), Value: aws.String("Value2")}}},
 		}, MetricsPerPage: 100}
-		executor := newExecutor(im, &setting.Cfg{AWSListMetricsPageLimit: pageLimit}, &fakeSessionCache{})
+		executor := newExecutor(im, &setting.Cfg{AWSListMetricsPageLimit: pageLimit}, &fakeSessionCache{}, log.NewNullLogger())
 
 		req := &backend.CallResourceRequest{
 			Method: "GET",
@@ -112,7 +113,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 			{MetricName: aws.String("Test_MetricName8"), Dimensions: []*cloudwatch.Dimension{{Name: aws.String("Test_DimensionName4")}}},
 			{MetricName: aws.String("Test_MetricName9"), Dimensions: []*cloudwatch.Dimension{{Name: aws.String("Test_DimensionName1")}}},
 		}, MetricsPerPage: 2}
-		executor := newExecutor(im, &setting.Cfg{AWSListMetricsPageLimit: pageLimit}, &fakeSessionCache{})
+		executor := newExecutor(im, &setting.Cfg{AWSListMetricsPageLimit: pageLimit}, &fakeSessionCache{}, log.NewNullLogger())
 
 		req := &backend.CallResourceRequest{
 			Method: "GET",
@@ -136,7 +137,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 
 	t.Run("Should handle standard dimension key query and return hard coded keys", func(t *testing.T) {
 		api = mocks.FakeMetricsAPI{}
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 
 		req := &backend.CallResourceRequest{
 			Method: "GET",
@@ -160,7 +161,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 
 	t.Run("Should handle custom namespace dimension key query and return hard coded keys", func(t *testing.T) {
 		api = mocks.FakeMetricsAPI{}
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 
 		req := &backend.CallResourceRequest{
 			Method: "GET",
@@ -196,7 +197,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 			{MetricName: aws.String("Test_MetricName8"), Namespace: aws.String("AWS/EC2"), Dimensions: []*cloudwatch.Dimension{{Name: aws.String("Test_DimensionName4")}}},
 			{MetricName: aws.String("Test_MetricName9"), Namespace: aws.String("AWS/EC2"), Dimensions: []*cloudwatch.Dimension{{Name: aws.String("Test_DimensionName1")}}},
 		}, MetricsPerPage: 2}
-		executor := newExecutor(im, &setting.Cfg{AWSListMetricsPageLimit: pageLimit}, &fakeSessionCache{})
+		executor := newExecutor(im, &setting.Cfg{AWSListMetricsPageLimit: pageLimit}, &fakeSessionCache{}, log.NewNullLogger())
 
 		req := &backend.CallResourceRequest{
 			Method: "GET",
@@ -232,7 +233,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 				},
 			},
 		}, nil)
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 
 		req := &backend.CallResourceRequest{
 			Method: "GET",
@@ -253,7 +254,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 	})
 
 	t.Run("Should handle region requests and return regions from the api", func(t *testing.T) {
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 		req := &backend.CallResourceRequest{
 			Method: "GET",
 			Path:   `/regions`,
@@ -278,7 +279,7 @@ func Test_CloudWatch_CallResource_Integration_Test(t *testing.T) {
 			}}, nil
 		})
 
-		executor := newExecutor(imWithoutDefaultRegion, newTestConfig(), &fakeSessionCache{})
+		executor := newExecutor(imWithoutDefaultRegion, newTestConfig(), &fakeSessionCache{}, log.NewNullLogger())
 		req := &backend.CallResourceRequest{
 			Method: "GET",
 			Path:   `/regions`,

@@ -4,7 +4,9 @@ import { Unsubscribable } from 'rxjs';
 import { CoreApp, DataQueryRequest, NavIndex, NavModelItem, locationUtil } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import {
+  CustomVariable,
   getUrlSyncManager,
+  IntervalVariable,
   SceneFlexLayout,
   SceneGridItem,
   SceneGridLayout,
@@ -17,6 +19,7 @@ import {
   sceneUtils,
   SceneVariable,
   SceneVariableDependencyConfigLike,
+  SceneVariableSet,
 } from '@grafana/scenes';
 import { Dashboard, DashboardLink } from '@grafana/schema';
 import appEvents from 'app/core/app_events';
@@ -42,6 +45,7 @@ import { DashboardControls } from './DashboardControls';
 import { DashboardSceneUrlSync } from './DashboardSceneUrlSync';
 import { ViewPanelScene } from './ViewPanelScene';
 import { setupKeyboardShortcuts } from './keyboardShortcuts';
+import { isEditableVariableType, isSceneVariable, isSceneVariableInstance } from '../settings/variables/utils';
 
 export const PERSISTED_PROPS = ['title', 'description', 'tags', 'editable', 'graphTooltip', 'links'];
 
@@ -353,6 +357,13 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> {
           if (Object.prototype.hasOwnProperty.call(event.payload.partialUpdate, 'hideTimeControls')) {
             this.setIsDirty();
           }
+        }
+        if (event.payload.changedObject instanceof SceneVariableSet) {
+          this.setIsDirty();
+        }
+        if(isSceneVariableInstance(event.payload.changedObject)) {
+          console.log('custom variable changed', event.payload);
+          this.setIsDirty();
         }
       }
     );

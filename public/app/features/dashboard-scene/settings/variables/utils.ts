@@ -12,6 +12,9 @@ import {
   AdHocFilterSet,
   SceneVariable,
   MultiValueVariable,
+  sceneUtils,
+  SceneObject,
+  SceneVariableState,
 } from '@grafana/scenes';
 import { VariableType } from '@grafana/schema';
 
@@ -24,6 +27,7 @@ import { DataSourceVariableEditor } from './editors/DataSourceVariableEditor';
 import { IntervalVariableEditor } from './editors/IntervalVariableEditor';
 import { QueryVariableEditor } from './editors/QueryVariableEditor';
 import { TextBoxVariableEditor } from './editors/TextBoxVariableEditor';
+import { is } from 'immutable';
 
 interface EditableVariableConfig {
   name: string;
@@ -158,4 +162,29 @@ export function getOptionDataSourceTypes() {
   optionTypes.unshift({ label: '', value: '' });
 
   return optionTypes;
+}
+
+function isSceneVariable (sceneObject: SceneObject): sceneObject is SceneVariable {
+  return 'type' in sceneObject.state && 'getValue' in sceneObject;
+}
+
+export function isSceneVariableInstance(sceneObject: SceneObject): sceneObject is SceneVariable {
+  if(!isSceneVariable(sceneObject)) {
+    return false;
+  }
+
+  return (
+    sceneUtils.isAdHocVariable(sceneObject) ||
+    sceneUtils.isConstantVariable(sceneObject) ||
+    sceneUtils.isCustomVariable(sceneObject) ||
+    sceneUtils.isDataSourceVariable(sceneObject) ||
+    sceneUtils.isIntervalVariable(sceneObject) ||
+    sceneUtils.isQueryVariable(sceneObject) ||
+    sceneUtils.isTextBoxVariable(sceneObject)
+  );
+}
+
+export function hasVariableChanged(prevState: SceneVariableState, newState: SceneVariableState){
+  // TODO: Detect changes in the state of the variable that should be persisted
+  return true;
 }

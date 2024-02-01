@@ -166,7 +166,7 @@ func (st DBstore) InsertAlertRules(ctx context.Context, rules []ngmodels.AlertRu
 			for i := range newRules {
 				if _, err := sess.Insert(&newRules[i]); err != nil {
 					if st.SQLStore.GetDialect().IsUniqueConstraintViolation(err) {
-						return ngmodels.ErrAlertRuleUniqueConstraintViolation
+						return fmt.Errorf("failed to insert rule (UID: '%s', Title: '%s', Namespace: '%s'): %w", newRules[i].UID, newRules[i].Title, newRules[i].NamespaceUID, ngmodels.ErrAlertRuleUniqueConstraintViolation)
 					}
 					return fmt.Errorf("failed to create new rules: %w", err)
 				}
@@ -209,7 +209,7 @@ func (st DBstore) UpdateAlertRules(ctx context.Context, rules []ngmodels.UpdateR
 			if updated, err := sess.ID(r.Existing.ID).AllCols().Update(r.New); err != nil || updated == 0 {
 				if err != nil {
 					if st.SQLStore.GetDialect().IsUniqueConstraintViolation(err) {
-						return ngmodels.ErrAlertRuleUniqueConstraintViolation
+						return fmt.Errorf("failed to update rule (UID: '%s', Title: '%s', Namespace: '%s'): %w", r.New.UID, r.New.Title, r.New.NamespaceUID, ngmodels.ErrAlertRuleUniqueConstraintViolation)
 					}
 					return fmt.Errorf("failed to update rule [%s] %s: %w", r.New.UID, r.New.Title, err)
 				}

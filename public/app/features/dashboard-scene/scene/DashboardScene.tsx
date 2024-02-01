@@ -4,9 +4,7 @@ import { Unsubscribable } from 'rxjs';
 import { CoreApp, DataQueryRequest, NavIndex, NavModelItem, locationUtil } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import {
-  CustomVariable,
   getUrlSyncManager,
-  IntervalVariable,
   SceneFlexLayout,
   SceneGridItem,
   SceneGridLayout,
@@ -35,6 +33,7 @@ import { DashboardSceneRenderer } from '../scene/DashboardSceneRenderer';
 import { transformSaveModelToScene } from '../serialization/transformSaveModelToScene';
 import { DecoratedRevisionModel } from '../settings/VersionsEditView';
 import { DashboardEditView } from '../settings/utils';
+import { hasVariableChanged } from '../settings/variables/utils';
 import { historySrv } from '../settings/version-history';
 import { DashboardModelCompatibilityWrapper } from '../utils/DashboardModelCompatibilityWrapper';
 import { djb2Hash } from '../utils/djb2Hash';
@@ -45,7 +44,6 @@ import { DashboardControls } from './DashboardControls';
 import { DashboardSceneUrlSync } from './DashboardSceneUrlSync';
 import { ViewPanelScene } from './ViewPanelScene';
 import { setupKeyboardShortcuts } from './keyboardShortcuts';
-import { isEditableVariableType, isSceneVariable, isSceneVariableInstance } from '../settings/variables/utils';
 
 export const PERSISTED_PROPS = ['title', 'description', 'tags', 'editable', 'graphTooltip', 'links'];
 
@@ -361,8 +359,15 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> {
         if (event.payload.changedObject instanceof SceneVariableSet) {
           this.setIsDirty();
         }
-        if(isSceneVariableInstance(event.payload.changedObject)) {
-          console.log('custom variable changed', event.payload);
+        if (
+          hasVariableChanged(
+            event.payload.changedObject,
+            event.payload.partialUpdate,
+            event.payload.prevState,
+            event.payload.newState
+          )
+        ) {
+          console.log('payload', event.payload);
           this.setIsDirty();
         }
       }

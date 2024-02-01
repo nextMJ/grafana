@@ -1,4 +1,4 @@
-import { chain } from 'lodash';
+import { chain, isEqual } from 'lodash';
 
 import { DataSourceInstanceSettings, SelectableValue } from '@grafana/data';
 import { getDataSourceSrv } from '@grafana/runtime';
@@ -15,6 +15,7 @@ import {
   sceneUtils,
   SceneObject,
   SceneVariableState,
+  SceneObjectState,
 } from '@grafana/scenes';
 import { VariableType } from '@grafana/schema';
 
@@ -27,7 +28,6 @@ import { DataSourceVariableEditor } from './editors/DataSourceVariableEditor';
 import { IntervalVariableEditor } from './editors/IntervalVariableEditor';
 import { QueryVariableEditor } from './editors/QueryVariableEditor';
 import { TextBoxVariableEditor } from './editors/TextBoxVariableEditor';
-import { is } from 'immutable';
 
 interface EditableVariableConfig {
   name: string;
@@ -164,12 +164,16 @@ export function getOptionDataSourceTypes() {
   return optionTypes;
 }
 
-function isSceneVariable (sceneObject: SceneObject): sceneObject is SceneVariable {
+function isSceneVariable(sceneObject: SceneObject): sceneObject is SceneVariable {
   return 'type' in sceneObject.state && 'getValue' in sceneObject;
 }
 
+function isVariableStateWithOptions(state: Partial<SceneVariableState>) {
+  return 'options' in state || 'intervals' in state;
+}
+
 export function isSceneVariableInstance(sceneObject: SceneObject): sceneObject is SceneVariable {
-  if(!isSceneVariable(sceneObject)) {
+  if (!isSceneVariable(sceneObject)) {
     return false;
   }
 
@@ -184,7 +188,30 @@ export function isSceneVariableInstance(sceneObject: SceneObject): sceneObject i
   );
 }
 
-export function hasVariableChanged(prevState: SceneVariableState, newState: SceneVariableState){
-  // TODO: Detect changes in the state of the variable that should be persisted
+export function hasVariableChanged(
+  changedObject: SceneObject,
+  partialUpdate: Partial<SceneVariableState>,
+  previousState: SceneObjectState,
+  newState: SceneObjectState
+) {
+  if (!isSceneVariableInstance(changedObject)) {
+    return false;
+  }
+
+  // changes like loading, options, value, text should not trigger a change in Dashboard Settings
+  // options are part of variables that have options
+  if (changedObject.state.loading === true) {
+    return false;
+  }
+  if (isVariableStateWithOptions(partialUpdate)) {
+    //FIXME:ts complains 'options' does not exist on type 'Partial<SceneVariableState>
+    //@ts-ignore
+    if (partialUpdate.options !== undefined || partialUpdate.text !== undefined || partialUpdate.value !== undefined) {
+      return false;
+    }
+  }
+
+  //TODO: Add support when variable is restore to original templating state (reset)
+
   return true;
 }

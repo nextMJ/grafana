@@ -1,6 +1,8 @@
 import { css } from '@emotion/css';
 import leven from 'leven';
-import React from 'react';
+import { debounce } from 'lodash';
+import React, { useMemo, useState } from 'react';
+import { useDebounce } from 'react-use';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import {
@@ -254,8 +256,8 @@ export class MetricSelectScene extends SceneObjectBase<MetricSelectSceneState> {
     }
   };
 
-  public onSearchChange = (evt: React.SyntheticEvent<HTMLInputElement>) => {
-    this.setState({ searchQuery: evt.currentTarget.value });
+  public onSearchChange = (searchQuery: string | undefined) => {
+    this.setState({ searchQuery });
     this.updateMetrics(); // Need to repeat entire pipeline
     this.buildLayout();
   };
@@ -292,6 +294,15 @@ export class MetricSelectScene extends SceneObjectBase<MetricSelectSceneState> {
         ? 'The current prefix filter is not available with the current search terms.'
         : undefined;
 
+    // Using a local state for the search query keeps the Input stable with debouncing
+    const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+    useDebounce(() => model.onSearchChange(localSearchQuery), 500, [localSearchQuery]);
+
+    const onPrefixFilterChange = useMemo(
+      () => debounce((prefix?: string) => model.onPrefixFilterChange(prefix), 1000),
+      [model]
+    );
+
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -299,8 +310,8 @@ export class MetricSelectScene extends SceneObjectBase<MetricSelectSceneState> {
             <Input
               placeholder="Search metrics"
               prefix={<Icon name={'search'} />}
-              value={searchQuery}
-              onChange={model.onSearchChange}
+              value={localSearchQuery}
+              onChange={(evt) => setLocalSearchQuery(evt.currentTarget.value)}
             />
           </Field>
           <InlineSwitch showLabel={true} label="Show previews" value={showPreviews} onChange={model.onTogglePreviews} />
@@ -309,7 +320,7 @@ export class MetricSelectScene extends SceneObjectBase<MetricSelectSceneState> {
           <Field label="Filter by prefix" error={prefixError} invalid={true}>
             <MetricCategoryCascader
               metricNames={metricsAfterSearch || []}
-              onSelect={model.onPrefixFilterChange}
+              onSelect={onPrefixFilterChange}
               disabled={metricsAfterSearch == null}
               initialValue={prefixFilter}
             />
